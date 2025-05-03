@@ -1,5 +1,6 @@
 #Requires AutoHotkey v2.0
 
+;参考
 ;https://www.autohotkey.com/boards/viewtopic.php?t=40151
 ;https://www.autohotkey.com/boards/viewtopic.php?t=114804
 
@@ -7,17 +8,16 @@
 ; Gitからダウンロードして同じディレクトリに置く
 #Include _JXON.ahk  ;https://github.com/TheArkive/JXON_ahk2
 
-
 ;サンプル
-Pause::{
+Pause:: {
     model_name := "llama2" ; モデル名を指定
-    prompt := GetTextSelection()  ; 選択中のテキストを取得
+    prompt := GetTextSelection()
 
     ToolTip("[" prompt "] とAIに指示しました")
+    SetTimer () => ToolTip(), -3000
     response := OllamaAPI(model_name, prompt)
-    OllamaGUI(prompt, response)
-    }
-
+    OllamaGUI(response)
+}
 
 OllamaAPI(model_name := "", prompt := "") {
     ; ここにAPIのURLを指定
