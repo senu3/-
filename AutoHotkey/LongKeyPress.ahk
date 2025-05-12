@@ -4,7 +4,7 @@
 Numpad1:: LongKeyPress('1', '0')
 
 LongKeyPress(shortOutput, longOutput, threshold := 150) {
-    local state := { processed: false }  ; 長押し処理が既に実行されたかのフラグ（オブジェクトは参照渡し）
+    local state := { processed: false }  ; 長押し処理が既に実行されたかのフラグ（オブジェクトは共有渡し）
     ; タイマー用の関数をバインド（長押し時の出力、状態を引数として渡す）
     timerFunc := CheckKeyPress.Bind(A_ThisHotkey, longOutput, state)
     SetTimer(timerFunc, threshold)   ; threshold時間後にタイマーコールバックが実行される
