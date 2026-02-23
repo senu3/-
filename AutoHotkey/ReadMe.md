@@ -1,3 +1,15 @@
+# ExplorerTerminalLauncher(New)
+CurrentCMDCall.ahkのPowerShell版。  
+ファイルエクスプローラー上でホットキーを押すと、
+ **PowerShell7** がカレントディレクトリを更新したうえで呼び出されます。  
+<img width="960" height="620" alt="スクリーンショット 2026-02-23 202349" src="https://github.com/user-attachments/assets/e8aaae51-5f55-4098-a1d4-282c606962c6" />
+
+PowerShell7が無ければ通常PowerShell。  
+開いているのがpythonリポジトリかつvenvがあるときは、venvをactiveにした状態のコマンドプロンプトを呼び出します。  
+
+ついでに、WSL2側フォルダでもUNCパスを渡してちゃんとWSLで開きます。  
+Windows環境、WSL2環境、どちらでもターミナル直呼びが楽にできるのは楽です（二重語）。
+
 # LongKeyPress.ahk
 キーを短押し、長押しで分岐させるコードです。
 v1のときに使っていたコードがv2で使えなくなったため作成しました。
