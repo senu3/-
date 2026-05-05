@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C# クラス・メソッド・プロパティ</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg2: #161b22;
+    --bg3: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --class-color: #c792ea;
+    --prop-color: #82aaff;
+    --method-color: #f78c6c;
+    --field-color: #89ddff;
+    --ctor-color: #c3e88d;
+    --instance-color: #ffcb6b;
+    --accent: #58a6ff;
+    --glow-class: rgba(199,146,234,0.15);
+    --glow-prop: rgba(130,170,255,0.15);
+    --glow-method: rgba(247,140,108,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+    padding: 32px 24px;
+  }
+
+  h1 {
+    font-size: 13px;
+    font-weight: 300;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  h2 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 32px;
+    letter-spacing: -0.02em;
+  }
+
+  /* ── メインレイアウト ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* ── クラス図パネル ── */
+  .class-diagram {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .class-header {
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+  }
+
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-red { background: #ff5f57; }
+  .dot-yellow { background: #febc2e; }
+  .dot-green { background: #28c840; }
+
+  .class-box {
+    margin: 16px;
+    border: 2px solid var(--class-color);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 0 20px var(--glow-class);
+    transition: box-shadow 0.3s;
+  }
+
+  .class-box.active {
+    border: 2px solid var(--class-color);
+  }
+
+  .class-name-row {
+    background: rgba(199,146,234,0.12);
+    padding: 10px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .class-name-row:hover { background: rgba(199,146,234,0.22); }
+
+  .keyword { color: var(--class-color); font-weight: 600; }
+  .class-name-text { color: var(--text); font-weight: 600; }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 6px 16px 4px;
+    background: var(--bg3);
+    border-top: 1px solid var(--border);
+  }
+
+  .member-row {
+    padding: 8px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    border-top: 1px solid rgba(48,54,61,0.5);
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .member-row:hover { background: rgba(255,255,255,0.04); }
+  .member-row.active { background: rgba(255,255,255,0.08); }
+
+  .tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+
+  .tag-field   { background: rgba(137,221,255,0.15); color: var(--field-color); }
+  .tag-prop    { background: rgba(130,170,255,0.15); color: var(--prop-color); }
+  .tag-ctor    { background: rgba(195,232,141,0.15); color: var(--ctor-color); }
+  .tag-method  { background: rgba(247,140,108,0.15); color: var(--method-color); }
+
+  .member-text { flex: 1; }
+  .type-color  { color: var(--field-color); }
+  .prop-color  { color: var(--prop-color); }
+  .method-color{ color: var(--method-color); }
+  .ctor-color  { color: var(--ctor-color); }
+  .str-color   { color: #c3e88d; }
+  .num-color   { color: var(--instance-color); }
+
+  /* ── インスタンスボックス ── */
+
+  .instance-area {
+    margin: 0 16px 16px;
+    border: 1px solid rgba(255,203,107,0.4);
+    border-radius: 8px;
+    padding: 10px 14px;
+    background: rgba(255,203,107,0.05);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.8;
+  }
+
+  .instance-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--instance-color);
+    margin-bottom: 6px;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+
+  .instance-area.active {
+    border: 2px solid rgba(255,203,107,0.4);
+  }
+
+  /* ── 詳細パネル ── */
+  .detail-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .info-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    min-height: 120px;
+  }
+
+  .info-card.highlight-class  { border-color: var(--class-color);  box-shadow: 0 0 16px var(--glow-class); }
+  .info-card.highlight-prop   { border-color: var(--prop-color);   box-shadow: 0 0 16px var(--glow-prop); }
+  .info-card.highlight-method { border-color: var(--method-color); box-shadow: 0 0 16px var(--glow-method); }
+  .info-card.highlight-field  { border-color: var(--field-color);  box-shadow: 0 0 16px rgba(137,221,255,0.15); }
+  .info-card.highlight-ctor   { border-color: var(--ctor-color);   box-shadow: 0 0 16px rgba(195,232,141,0.15); }
+  .info-card.highlight-instance{ border-color: var(--instance-color); box-shadow: 0 0 16px rgba(255,203,107,0.15); }
+
+  .info-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .info-desc {
+    font-size: 13px;
+    line-height: 1.75;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .code-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.8;
+    overflow-x: auto;
+    white-space: pre;
+    margin: 0;
+    display: none;
+  }
+
+  .code-block.show { display: block; }
+
+  .code-comment { color: #5c7079; }
+  .code-keyword { color: var(--class-color); font-weight: 600; }
+  .code-type    { color: var(--field-color); }
+  .code-string  { color: var(--ctor-color); }
+  .code-num     { color: var(--instance-color); }
+  .code-method  { color: var(--method-color); }
+  .code-prop    { color: var(--prop-color); }
+
+  /* ── ナビタブ ── */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-top: 16px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 7px 8px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 400;
+  }
+
+  .tab:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+  .tab.active { background: var(--bg3); color: var(--text); font-weight: 700; border: 1px solid var(--border); }
+
+  /* ── フローアニメ ── */
+  .arrow-anim {
+    width: 100%;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+
+  .chevron {
+    display: inline-block;
+    animation: bounce 1.2s ease-in-out infinite;
+  }
+
+  .chevron:nth-child(2) { animation-delay: 0.15s; }
+  .chevron:nth-child(3) { animation-delay: 0.30s; }
+
+  @keyframes bounce {
+    0%, 100% { opacity: 0.2; transform: translateX(0); }
+    50% { opacity: 1; transform: translateX(3px); }
+  }
+
+  /* ── ウェルカム ── */
+  .welcome {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.7;
+    padding: 16px 0;
+  }
+
+  .welcome strong { color: var(--text); }
+
+  /* ── レスポンシブ ── */
+  @media (max-width: 720px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div style="max-width:1100px;margin:0 auto">
+  <h1>C# オブジェクト指向プログラミング</h1>
+  <h2>クラス・プロパティ・メソッド</h2>
+
+  <div class="layout">
+
+    <!-- 左：クラス図 -->
+    <div class="class-diagram">
+      <div class="class-header">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+        <span style="margin-left:8px;color:var(--muted)">Person.cs</span>
+      </div>
+
+      <div class="class-box" id="class-box">
+        <div class="class-name-row" onclick="highlight('class')">
+          <span class="keyword">public class</span>
+          <span class="class-name-text">Person</span>
+          <span style="color:var(--muted);font-size:11px;margin-left:auto">← クリック</span>
+        </div>
+
+        <!-- フィールド -->
+        <div class="section-label">フィールド (Fields)</div>
+
+        <div class="member-row" id="row-field1" onclick="highlight('field')">
+          <span class="tag tag-field">field</span>
+          <span class="member-text">
+            <span class="keyword">private</span>
+            <span class="type-color"> string</span>
+            <span> _name;</span>
+          </span>
+        </div>
+        <div class="member-row" id="row-field2" onclick="highlight('field')">
+          <span class="tag tag-field">field</span>
+          <span class="member-text">
+            <span class="keyword">private</span>
+            <span class="type-color"> int</span>
+            <span> _age;</span>
+          </span>
+        </div>
+
+        <!-- プロパティ -->
+        <div class="section-label">プロパティ (Properties)</div>
+
+        <div class="member-row" id="row-prop1" onclick="highlight('property')">
+          <span class="tag tag-prop">prop</span>
+          <span class="member-text">
+            <span class="keyword">public</span>
+            <span class="type-color"> string</span>
+            <span class="prop-color"> Name</span>
+            <span style="color:var(--muted)"> { get; set; }</span>
+          </span>
+        </div>
+        <div class="member-row" id="row-prop2" onclick="highlight('property')">
+          <span class="tag tag-prop">prop</span>
+          <span class="member-text">
+            <span class="keyword">public</span>
+            <span class="type-color"> int</span>
+            <span class="prop-color"> Age</span>
+            <span style="color:var(--muted)"> { get; set; }</span>
+          </span>
+        </div>
+
+        <!-- コンストラクタ -->
+        <div class="section-label">コンストラクタ (Constructor)</div>
+
+        <div class="member-row" id="row-ctor" onclick="highlight('ctor')">
+          <span class="tag tag-ctor">ctor</span>
+          <span class="member-text">
+            <span class="ctor-color">Person</span>
+            <span style="color:var(--muted)">(string name, int age)</span>
+          </span>
+        </div>
+
+        <!-- メソッド -->
+        <div class="section-label">メソッド (Methods)</div>
+
+        <div class="member-row" id="row-m1" onclick="highlight('method')">
+          <span class="tag tag-method">void</span>
+          <span class="member-text">
+            <span class="method-color">Introduce</span>
+            <span style="color:var(--muted)">()</span>
+          </span>
+        </div>
+        <div class="member-row" id="row-m2" onclick="highlight('method')">
+          <span class="tag tag-method">string</span>
+          <span class="member-text">
+            <span class="method-color">Greet</span>
+            <span style="color:var(--muted)">(string other)</span>
+          </span>
+        </div>
+        <div class="member-row" id="row-m3" onclick="highlight('method')">
+          <span class="tag tag-method">bool</span>
+          <span class="member-text">
+            <span class="method-color">IsAdult</span>
+            <span style="color:var(--muted)">()</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="arrow-anim">
+        <span style="color:var(--muted);font-size:11px">new でインスタンス化</span>
+        <span class="chevron">›</span><span class="chevron">›</span><span class="chevron">›</span>
+      </div>
+
+      <!-- インスタンス -->
+      <div class="instance-area" id="instance-area-box" onclick="highlight('instance')" style="cursor:pointer">
+        <div class="instance-label">インスタンス (Instance)</div>
+        <span class="keyword">var</span>
+        <span class="type-color"> p </span>
+        <span>= </span>
+        <span class="keyword">new </span>
+        <span class="ctor-color">Person</span>
+        <span style="color:var(--muted)">(</span>
+        <span class="str-color">"田中"</span>
+        <span style="color:var(--muted)">, </span>
+        <span class="num-color">28</span>
+        <span style="color:var(--muted)">);</span>
+        <br>
+        <span style="color:var(--muted)">p.</span>
+        <span class="prop-color">Name</span>
+        <span> = </span>
+        <span class="str-color">"山田"</span>
+        <span style="color:var(--muted)">;</span>
+        <br>
+        <span style="color:var(--muted)">p.</span>
+        <span class="method-color">Introduce</span>
+        <span style="color:var(--muted)">();</span>
+      </div>
+    </div>
+
+    <!-- 右：詳細パネル -->
+    <div class="detail-panel">
+      <div class="info-card" id="info-card">
+        <div id="info-content">
+          <p class="welcome">
+            左のクラス図の各要素をクリックすると、<strong>詳しい説明とコード例</strong>が表示されます。<br><br>
+            下のタブからも各概念に直接ジャンプできます。
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="setTab('diagram')">📐 構造図</button>
+    <button class="tab" onclick="setTab('class')">📦 クラス</button>
+    <button class="tab" onclick="setTab('property')">🔑 プロパティ</button>
+    <button class="tab" onclick="setTab('method')">⚙️ メソッド</button>
+  </div>
+
+</div>
+
+<script>
+const contents = {
+  class: {
+    colorClass: 'highlight-class',
+    title: '📦 クラス (Class)',
+    desc: 'クラスは「設計図」です。現実世界の物や概念をプログラムで表現するためのテンプレートで、データ（フィールド/プロパティ）と動作（メソッド）をひとまとめにします。',
+    code: `<span class="code-comment">// クラスの定義</span>
+<span class="code-keyword">public class</span> <span style="color:#e6edf3">Person</span>
+{
+    <span class="code-comment">// ← フィールド、プロパティ、メソッドをここに書く</span>
+}
+
+<span class="code-comment">// 使い方</span>
+<span class="code-keyword">var</span> p = <span class="code-keyword">new</span> <span style="color:#e6edf3">Person</span>();`
+  },
+  field: {
+    colorClass: 'highlight-field',
+    title: '🗄️ フィールド (Field)',
+    desc: 'クラス内で直接宣言する変数です。通常は <code style="color:var(--field-color)">private</code> にして外部から隠蔽し、プロパティ経由でアクセスさせます（カプセル化）。',
+    code: `<span class="code-keyword">public class</span> Person
+{
+    <span class="code-comment">// privateフィールド（外から直接触れない）</span>
+    <span class="code-keyword">private</span> <span class="code-type">string</span> _name;
+    <span class="code-keyword">private</span> <span class="code-type">int</span> _age;
+}`
+  },
+  property: {
+    colorClass: 'highlight-prop',
+    title: '🔑 プロパティ (Property)',
+    desc: 'フィールドへの「安全な窓口」です。<code style="color:var(--prop-color)">get</code>（読み取り）と <code style="color:var(--prop-color)">set</code>（書き込み）でアクセスを制御できます。バリデーションも可能。',
+    code: `<span class="code-keyword">public class</span> Person
+{
+    <span class="code-keyword">private</span> <span class="code-type">int</span> _age;
+
+    <span class="code-comment">// 自動プロパティ（最もシンプル）</span>
+    <span class="code-keyword">public</span> <span class="code-type">string</span> <span class="code-prop">Name</span> { <span class="code-keyword">get</span>; <span class="code-keyword">set</span>; }
+
+    <span class="code-comment">// バリデーション付きプロパティ</span>
+    <span class="code-keyword">public</span> <span class="code-type">int</span> <span class="code-prop">Age</span>
+    {
+        <span class="code-keyword">get</span> => _age;
+        <span class="code-keyword">set</span>
+        {
+            <span class="code-keyword">if</span> (value >= <span class="code-num">0</span>) _age = value;
+        }
+    }
+
+    <span class="code-comment">// 読み取り専用プロパティ</span>
+    <span class="code-keyword">public</span> <span class="code-type">string</span> <span class="code-prop">Summary</span> => $<span class="code-string">"{Name}（{Age}歳）"</span>;
+}`
+  },
+  ctor: {
+    colorClass: 'highlight-ctor',
+    title: '🏗️ コンストラクタ (Constructor)',
+    desc: '<code style="color:var(--ctor-color)">new</code> でインスタンスを作るときに自動で呼ばれる特別なメソッドです。クラス名と同じ名前で、戻り値の型を書きません。初期値のセットに使います。',
+    code: `<span class="code-keyword">public class</span> Person
+{
+    <span class="code-keyword">public</span> <span class="code-type">string</span> <span class="code-prop">Name</span> { <span class="code-keyword">get</span>; <span class="code-keyword">set</span>; }
+    <span class="code-keyword">public</span> <span class="code-type">int</span> <span class="code-prop">Age</span>  { <span class="code-keyword">get</span>; <span class="code-keyword">set</span>; }
+
+    <span class="code-comment">// コンストラクタ（クラス名と同じ、戻り値なし）</span>
+    <span class="code-keyword">public</span> <span class="code-method">Person</span>(<span class="code-type">string</span> name, <span class="code-type">int</span> age)
+    {
+        Name = name;
+        Age  = age;
+    }
+}
+
+<span class="code-comment">// new するときに呼ばれる</span>
+<span class="code-keyword">var</span> p = <span class="code-keyword">new</span> <span class="code-method">Person</span>(<span class="code-string">"田中"</span>, <span class="code-num">28</span>);`
+  },
+  method: {
+    colorClass: 'highlight-method',
+    title: '⚙️ メソッド (Method)',
+    desc: 'クラスが持つ「動作・機能」です。<code style="color:var(--method-color)">void</code>（戻り値なし）か戻り値の型を指定し、引数を受け取って処理を実行します。',
+    code: `<span class="code-keyword">public class</span> Person
+{
+    <span class="code-keyword">public</span> <span class="code-type">string</span> <span class="code-prop">Name</span> { <span class="code-keyword">get</span>; <span class="code-keyword">set</span>; }
+    <span class="code-keyword">public</span> <span class="code-type">int</span>    <span class="code-prop">Age</span>  { <span class="code-keyword">get</span>; <span class="code-keyword">set</span>; }
+
+    <span class="code-comment">// void：戻り値なし</span>
+    <span class="code-keyword">public void</span> <span class="code-method">Introduce</span>()
+    {
+        Console.WriteLine($<span class="code-string">"私は{Name}、{Age}歳です"</span>);
+    }
+
+    <span class="code-comment">// string を返す・引数あり</span>
+    <span class="code-keyword">public</span> <span class="code-type">string</span> <span class="code-method">Greet</span>(<span class="code-type">string</span> other)
+    {
+        <span class="code-keyword">return</span> $<span class="code-string">"{other}さん、こんにちは！"</span>;
+    }
+
+    <span class="code-comment">// bool を返す</span>
+    <span class="code-keyword">public</span> <span class="code-type">bool</span> <span class="code-method">IsAdult</span>() => Age >= <span class="code-num">18</span>;
+}`
+  },
+  instance: {
+    colorClass: 'highlight-instance',
+    title: '✨ インスタンス (Instance)',
+    desc: 'クラス（設計図）から <code style="color:var(--instance-color)">new</code> で作った「実体」です。同じクラスから複数のインスタンスを作れ、それぞれが独立したデータを持ちます。',
+    code: `<span class="code-comment">// インスタンスを作る（コンストラクタが呼ばれる）</span>
+<span class="code-keyword">var</span> p1 = <span class="code-keyword">new</span> <span class="code-method">Person</span>(<span class="code-string">"田中"</span>, <span class="code-num">28</span>);
+<span class="code-keyword">var</span> p2 = <span class="code-keyword">new</span> <span class="code-method">Person</span>(<span class="code-string">"山田"</span>, <span class="code-num">34</span>);
+
+<span class="code-comment">// プロパティにアクセス</span>
+Console.WriteLine(p1.<span class="code-prop">Name</span>); <span class="code-comment">// → "田中"</span>
+p2.<span class="code-prop">Age</span> = <span class="code-num">35</span>;             <span class="code-comment">// 値を変更</span>
+
+<span class="code-comment">// メソッドを呼ぶ</span>
+p1.<span class="code-method">Introduce</span>();         <span class="code-comment">// "私は田中、28歳です"</span>
+p1.<span class="code-method">Greet</span>(<span class="code-string">"山田"</span>);       <span class="code-comment">// "山田さん、こんにちは！"</span>
+
+<span class="code-comment">// p1とp2は独立している</span>
+<span class="code-comment">// → 片方を変えてももう片方には影響しない</span>`
+  }
+};
+
+let currentKey = null;
+
+function highlight(key) {
+  const c = contents[key];
+  if (!c) return;
+  currentKey = key;
+
+  // カードスタイル
+  const card = document.getElementById('info-card');
+  card.className = 'info-card ' + c.colorClass;
+
+  // コンテンツ
+  document.getElementById('info-content').innerHTML = `
+    <div class="info-title">${c.title}</div>
+    <div class="info-desc">${c.desc}</div>
+    <pre class="code-block show">${c.code}</pre>
+  `;
+
+  // アクティブ行のハイライト解除
+  document.querySelectorAll('.member-row').forEach(r => r.classList.remove('active'));
+
+  // 対応する行をアクティブに
+  const rowMap = {
+    field: ['row-field1','row-field2'],
+    property: ['row-prop1','row-prop2'],
+    ctor: ['row-ctor'],
+    method: ['row-m1','row-m2','row-m3'],
+  };
+  if (rowMap[key]) {
+    rowMap[key].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('active');
+    });
+  }
+}
+
+function setTab(key) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['diagram','class','field','property','ctor','method','instance'][i] === key);
+  });
+  const keyMap = { diagram: null, class: 'class', field: 'field', property: 'property', ctor: 'ctor', method: 'method', instance: 'instance' };
+  const mapped = keyMap[key];
+  if (mapped) highlight(mapped);
+  else {
+    currentKey = null;
+    document.getElementById('info-card').className = 'info-card';
+    document.getElementById('info-content').innerHTML = `
+      <p class="welcome">
+        左のクラス図の各要素をクリックすると、<strong>詳しい説明とコード例</strong>が表示されます。<br><br>
+        下のタブからも各概念に直接ジャンプできます。
+      </p>`;
+    document.querySelectorAll('.member-row').forEach(r => r.classList.remove('active'));
+  }
+}
+</script>
+</body>
+</html>
