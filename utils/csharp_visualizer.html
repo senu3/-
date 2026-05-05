@@ -94,10 +94,6 @@
     transition: box-shadow 0.3s;
   }
 
-  .class-box.active {
-    border: 2px solid var(--class-color);
-  }
-
   .class-name-row {
     background: rgba(199,146,234,0.12);
     padding: 10px 16px;
@@ -629,9 +625,9 @@ function highlight(key) {
 
 function setTab(key) {
   document.querySelectorAll('.tab').forEach((t,i) => {
-    t.classList.toggle('active', ['diagram','class','field','property','ctor','method','instance'][i] === key);
+    t.classList.toggle('active', ['diagram','class','property','method'][i] === key);
   });
-  const keyMap = { diagram: null, class: 'class', field: 'field', property: 'property', ctor: 'ctor', method: 'method', instance: 'instance' };
+  const keyMap = { diagram: null, class: 'class', property: 'property', method: 'method'};
   const mapped = keyMap[key];
   if (mapped) highlight(mapped);
   else {
